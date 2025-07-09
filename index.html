@@ -432,9 +432,315 @@
     let saturnRings = null;
     
     function createSaturnRings() {
-      // Ring functionality disabled - button shows fact only
-      return;
+      if (saturnRings) return; // already created
+      
+      // Create Saturn's immersive ring system
+      saturnRings = new THREE.Group();
+      
+      // Enhanced ring system with detailed composition data
+      const ringData = [
+        // C Ring (Crepe Ring) - sparse, dark particles
+        { 
+          inner: 2.15, outer: 2.45, 
+          color: 0x8b7355, opacity: 0.4,
+          name: "C Ring (Crepe Ring)",
+          composition: "Dark rocky particles and organic compounds",
+          size: "Very sparse - mostly empty space"
+        },
+        
+        // B Ring - dense ice particles
+        { 
+          inner: 2.45, outer: 3.1, 
+          color: 0xd4af8c, opacity: 0.9,
+          name: "B Ring (Main Ring)",
+          composition: "Dense water ice particles",
+          size: "Most massive ring - billions of ice chunks"
+        },
+        
+        // Cassini Division - nearly empty gap
+        { 
+          inner: 3.1, outer: 3.15, 
+          color: 0x4a4037, opacity: 0.15,
+          name: "Cassini Division",
+          composition: "Nearly empty space with scattered debris",
+          size: "4,700 km wide gap cleared by moon Mimas"
+        },
+        
+        // A Ring - bright ice and rock
+        { 
+          inner: 3.15, outer: 3.7, 
+          color: 0xc4a47c, opacity: 0.7,
+          name: "A Ring",
+          composition: "Water ice with rocky impurities",
+          size: "14,600 km wide band of mixed particles"
+        },
+        
+        // Encke Gap - shepherded by moonlet
+        { 
+          inner: 3.45, outer: 3.47, 
+          color: 0x6b5d4f, opacity: 0.2,
+          name: "Encke Gap",
+          composition: "Mostly cleared by moonlet Pan",
+          size: "325 km wide gap with faint ringlets"
+        },
+        
+        // F Ring - dynamic braided structure
+        { 
+          inner: 3.75, outer: 3.77, 
+          color: 0xe0c088, opacity: 0.8,
+          name: "F Ring",
+          composition: "Fine ice particles in braided strands",
+          size: "Narrow ring shepherded by moons Prometheus and Pandora"
+        }
+      ];
+      
+      // Create each ring with enhanced visuals
+      ringData.forEach((ring, index) => {
+        // Main ring geometry
+        const geometry = new THREE.RingGeometry(ring.inner, ring.outer, 256);
+        const material = new THREE.MeshBasicMaterial({
+          color: ring.color,
+          transparent: true,
+          opacity: ring.opacity,
+          side: THREE.DoubleSide
+        });
+        
+        const ringMesh = new THREE.Mesh(geometry, material);
+        ringMesh.rotation.x = Math.PI / 2; // Horizontal orientation
+        
+        // Store ring data for interactive info
+        ringMesh.userData = {
+          ringData: ring,
+          orbitalRadius: (ring.inner + ring.outer) / 2,
+          orbitalSpeed: 0.001 / Math.sqrt((ring.inner + ring.outer) / 2),
+          originalOpacity: ring.opacity
+        };
+        
+        saturnRings.add(ringMesh);
+        
+        // Add particle effects for dynamic appearance
+        if (ring.name !== "Cassini Division" && ring.name !== "Encke Gap") {
+          createRingParticles(ring, saturnRings);
+        }
+      });
+      
+      saturnRings.position.copy(venus.position);
+      scene.add(saturnRings);
+      
+      // Enable immersive camera mode
+      enableRingExploration();
     }
+    
+    // Ring exploration variables
+    let ringExplorationMode = false;
+    let ringInfoPopup = null;
+    let currentRingInfo = null;
+    
+    // Create dynamic particle effects for rings
+    function createRingParticles(ringData, parentGroup) {
+      const particleCount = Math.floor((ringData.outer - ringData.inner) * 100);
+      const particles = new THREE.BufferGeometry();
+      const positions = new Float32Array(particleCount * 3);
+      
+      for (let i = 0; i < particleCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = ringData.inner + Math.random() * (ringData.outer - ringData.inner);
+        
+        positions[i * 3] = Math.cos(angle) * radius;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 0.02; // Slight vertical spread
+        positions[i * 3 + 2] = Math.sin(angle) * radius;
+      }
+      
+      particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      
+      const particleMaterial = new THREE.PointsMaterial({
+        color: ringData.color,
+        size: 0.01,
+        transparent: true,
+        opacity: ringData.opacity * 0.8,
+        sizeAttenuation: true
+      });
+      
+      const particleSystem = new THREE.Points(particles, particleMaterial);
+      particleSystem.userData = {
+        isParticles: true,
+        ringData: ringData,
+        rotationSpeed: 0.0005 / Math.sqrt((ringData.inner + ringData.outer) / 2)
+      };
+      
+      parentGroup.add(particleSystem);
+    }
+    
+    // Enable ring click interaction mode
+    function enableRingExploration() {
+      ringExplorationMode = true;
+      
+      // Create info popup element
+      if (!ringInfoPopup) {
+        ringInfoPopup = document.createElement('div');
+        ringInfoPopup.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0, 0, 0, 0.8);
+          color: white;
+          padding: 20px;
+          border-radius: 10px;
+          font-family: sans-serif;
+          text-align: center;
+          z-index: 20000;
+          max-width: 300px;
+          border: 2px solid #5851FF;
+          display: none;
+        `;
+        document.body.appendChild(ringInfoPopup);
+      }
+      
+      // Show exploration instructions
+      showRingInfo({
+        name: "Ring Interactive Mode",
+        composition: "Click on any ring to learn about its composition",
+        size: "Discover what Saturn's rings are made of by clicking on them!"
+      });
+      
+      // Auto-hide instructions after 3 seconds
+      setTimeout(() => {
+        if (ringInfoPopup && currentRingInfo && currentRingInfo.name === "Ring Interactive Mode") {
+          ringInfoPopup.style.display = 'none';
+        }
+      }, 3000);
+    }
+    
+    // Show ring information popup
+    function showRingInfo(ringData) {
+      if (!ringInfoPopup) return;
+      
+      currentRingInfo = ringData;
+      ringInfoPopup.innerHTML = `
+        <h3 style="margin: 0 0 10px 0; color: #5851FF;">${ringData.name}</h3>
+        <p style="margin: 5px 0;"><strong>Composition:</strong><br>${ringData.composition}</p>
+        <p style="margin: 5px 0;"><strong>Details:</strong><br>${ringData.size}</p>
+      `;
+      ringInfoPopup.style.display = 'block';
+      
+      // Auto-hide after 4 seconds
+      setTimeout(() => {
+        if (ringInfoPopup && currentRingInfo === ringData) {
+          ringInfoPopup.style.display = 'none';
+        }
+      }, 4000);
+    }
+    
+    // Disable ring exploration mode
+    function disableRingExploration() {
+      ringExplorationMode = false;
+      if (ringInfoPopup) {
+        ringInfoPopup.style.display = 'none';
+      }
+      
+      // Clean up hover effects
+      if (hoveredRing) {
+        hoveredRing.material.opacity = hoveredRing.userData.originalOpacity;
+        hoveredRing = null;
+        document.body.style.cursor = 'default';
+      }
+    }
+    
+    // Raycasting for ring clicks
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    
+    function onRingClick(event) {
+      if (!ringExplorationMode || !saturnRings) return;
+      
+      // Calculate mouse position in normalized device coordinates
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      
+      // Update the picking ray with the camera and mouse position
+      raycaster.setFromCamera(mouse, camera);
+      
+      // Calculate objects intersecting the picking ray
+      const ringMeshes = saturnRings.children.filter(child => !child.userData.isParticles);
+      const intersects = raycaster.intersectObjects(ringMeshes);
+      
+      if (intersects.length > 0) {
+        const clickedRing = intersects[0].object;
+        const ringData = clickedRing.userData.ringData;
+        
+        if (ringData) {
+          showRingInfo(ringData);
+          
+          // Add a subtle highlight effect
+          highlightRing(clickedRing);
+        }
+      }
+    }
+    
+    // Highlight clicked ring temporarily
+    function highlightRing(ringMesh) {
+      const originalOpacity = ringMesh.material.opacity;
+      ringMesh.material.opacity = Math.min(1.0, originalOpacity + 0.3);
+      
+      // Fade back to original opacity
+      setTimeout(() => {
+        ringMesh.material.opacity = originalOpacity;
+      }, 2000);
+    }
+    
+    // Add hover effect for rings
+    let hoveredRing = null;
+    
+    function onRingHover(event) {
+      if (!ringExplorationMode || !saturnRings) return;
+      
+      // Calculate mouse position
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      
+      // Update raycaster
+      raycaster.setFromCamera(mouse, camera);
+      
+      // Check for intersections
+      const ringMeshes = saturnRings.children.filter(child => !child.userData.isParticles);
+      const intersects = raycaster.intersectObjects(ringMeshes);
+      
+      // Remove previous hover effect
+      if (hoveredRing) {
+        hoveredRing.material.opacity = hoveredRing.userData.originalOpacity;
+        hoveredRing = null;
+        document.body.style.cursor = 'default';
+      }
+      
+      // Add hover effect to new ring
+      if (intersects.length > 0) {
+        hoveredRing = intersects[0].object;
+        hoveredRing.userData.originalOpacity = hoveredRing.material.opacity;
+        hoveredRing.material.opacity = Math.min(1.0, hoveredRing.material.opacity + 0.2);
+        document.body.style.cursor = 'pointer';
+      }
+    }
+    
+    // Add click event listener for ring interactions
+    window.addEventListener('click', onRingClick);
+    window.addEventListener('mousemove', onRingHover);
+    
+    // Add touch event listener for mobile devices
+    window.addEventListener('touchend', (event) => {
+      if (!ringExplorationMode) return;
+      
+      // Prevent default and convert touch to click
+      event.preventDefault();
+      
+      const touch = event.changedTouches[0];
+      const clickEvent = {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      };
+      
+      onRingClick(clickEvent);
+    });
     
     function removeSaturnRings() {
       if (saturnRings) {
@@ -445,6 +751,15 @@
         });
         scene.remove(saturnRings);
         saturnRings = null;
+      }
+      
+      // Disable exploration mode
+      disableRingExploration();
+      
+      // Remove popup if it exists
+      if (ringInfoPopup) {
+        ringInfoPopup.remove();
+        ringInfoPopup = null;
       }
     }
 
@@ -539,6 +854,11 @@
       if (selectedKey !== 'calendar') {
         removeCalendarUI();
       }
+      
+      // Exit ring exploration mode if switching to another mode
+      if (ringExplorationMode && selectedKey !== 'fire') {
+        disableRingExploration();
+      }
     }
 
     // ---------------------------------------------------------------------
@@ -549,6 +869,11 @@
       removeEarth();
       removeSaturnRings();
       removeCalendarUI();
+      
+      // Exit ring exploration mode
+      if (ringExplorationMode) {
+        disableRingExploration();
+      }
 
       // Reset Saturn
       venus.position.set(0,0,0);
@@ -567,7 +892,7 @@
     // Facts and menu interactivity
     // -------------------------------------------------------------------------
     const facts = {
-      fire: "Saturn's magnificent ring system consists of countless ice and rock particles, making it one of the most beautiful and recognizable features in our solar system.",
+      fire: "Saturn's magnificent ring system consists of countless ice and rock particles. Click on the rings to learn more!",
       rotation: "Fast rotation: Saturn spins very quickly with a day lasting only about 10.7 hours, making it one of the fastest rotating planets in our solar system.",
       calendar: "Orbital period: Saturn takes about 29.5 Earth years to complete one orbit around the Sun. Use the slider to see how slowly Saturn moves compared to Earth!",
       earth: "Size comparison: Saturn radius ≈ 58,232 km, about 9.1 times larger than Earth's radius. Saturn is also much less dense than Earth and would float in water!"
@@ -618,7 +943,17 @@
         venus.rotation.y += 0.02 * 2.24;  // Increased speed for visibility
       }
 
-      // Saturn rings disabled
+      // Animate Saturn rings and particles
+      if (saturnRings) {
+        saturnRings.rotation.y += 0.001;
+        
+        // Animate ring particles
+        saturnRings.children.forEach(child => {
+          if (child.userData.isParticles) {
+            child.rotation.y += child.userData.rotationSpeed;
+          }
+        });
+      }
 
       // Earth prograde rotation - normal speed
       if (earthMesh) earthMesh.rotation.y += 0.02;  // Increased speed for visibility
