@@ -525,6 +525,11 @@
       });
       
       saturnRings.position.copy(venus.position);
+      
+      // Add a slight upward tilt to Saturn and rings for better viewing angle
+      venus.rotation.x = -0.2; // Tilt Saturn slightly upward
+      saturnRings.rotation.x = -0.2; // Tilt rings to match Saturn
+      
       scene.add(saturnRings);
       
       // Enable immersive camera mode
@@ -788,6 +793,9 @@
         saturnRings = null;
       }
       
+      // Reset Saturn's tilt back to normal
+      venus.rotation.x = 0;
+      
       // Disable exploration mode
       disableRingExploration();
       
@@ -912,6 +920,7 @@
 
       // Reset Saturn
       venus.position.set(0,0,0);
+      venus.rotation.x = 0; // Reset any tilt
       venus.visible = true;
       rotationPaused = false;
       
