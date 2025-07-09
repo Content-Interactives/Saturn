@@ -579,8 +579,8 @@
     
     // Enable ring click interaction mode
     function enableRingExploration() {
-      // Enable ring exploration mode immediately
-      ringExplorationMode = true;
+      // Disable all ring detection immediately
+      ringExplorationMode = false; // Start with disabled mode
       hoverDetectionEnabled = false;
       
       // Clear any existing hover state immediately
@@ -593,49 +593,54 @@
       // Clear any existing ring info immediately
       hideAllRingInfo();
       
-      // Create info popup element
-      if (!ringInfoPopup) {
-        ringInfoPopup = document.createElement('div');
-        ringInfoPopup.style.cssText = `
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: rgba(0, 0, 0, 0.8);
-          color: white;
-          padding: 20px;
-          border-radius: 10px;
-          font-family: sans-serif;
-          text-align: center;
-          z-index: 20000;
-          max-width: 300px;
-          border: 2px solid #5851FF;
-          display: none;
-        `;
-        document.body.appendChild(ringInfoPopup);
-      }
-      
-      // Show only instructions - no ring detection
-      showRingInfo({
-        name: "Ring Interactive Mode",
-        composition: "Click on any ring to learn about its composition",
-        size: "Discover what Saturn's rings are made of by clicking on them!"
-      });
-      
-      // Enable hover detection after a delay to prevent automatic triggering
+      // Wait a moment before enabling ring exploration mode
       setTimeout(() => {
-        if (ringExplorationMode) { // Only enable if still in exploration mode
-          hoverDetectionEnabled = true;
+        ringExplorationMode = true;
+        
+        // Create info popup element
+        if (!ringInfoPopup) {
+          ringInfoPopup = document.createElement('div');
+          ringInfoPopup.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: sans-serif;
+            text-align: center;
+            z-index: 20000;
+            max-width: 300px;
+            border: 2px solid #5851FF;
+            display: none;
+          `;
+          document.body.appendChild(ringInfoPopup);
         }
-      }, 1000);
-      
-      // Auto-hide instructions after 3 seconds
-      setTimeout(() => {
-        if (ringInfoPopup && currentRingInfo && currentRingInfo.name === "Ring Interactive Mode") {
-          ringInfoPopup.style.display = 'none';
-          currentRingInfo = null; // Clear the current ring info
-        }
-      }, 3000);
+        
+        // Show only instructions - no ring detection
+        showRingInfo({
+          name: "Ring Interactive Mode",
+          composition: "Click on any ring to learn about its composition",
+          size: "Discover what Saturn's rings are made of by clicking on them!"
+        });
+        
+        // Enable hover detection after a longer delay to prevent automatic triggering
+        setTimeout(() => {
+          if (ringExplorationMode) { // Only enable if still in exploration mode
+            hoverDetectionEnabled = true;
+          }
+        }, 2000); // Increased delay to 2 seconds
+        
+        // Auto-hide instructions after 3 seconds
+        setTimeout(() => {
+          if (ringInfoPopup && currentRingInfo && currentRingInfo.name === "Ring Interactive Mode") {
+            ringInfoPopup.style.display = 'none';
+            currentRingInfo = null; // Clear the current ring info
+          }
+        }, 3000);
+      }, 200); // 200ms delay before enabling ring mode
     }
     
     // Show ring information popup
@@ -686,6 +691,11 @@
     function onRingClick(event) {
       if (!ringExplorationMode || !saturnRings) return;
       
+      // Don't allow ring clicks while instructions are being displayed
+      if (currentRingInfo && currentRingInfo.name === "Ring Interactive Mode") {
+        return;
+      }
+      
       // Calculate mouse position in normalized device coordinates
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -726,6 +736,11 @@
     
     function onRingHover(event) {
       if (!ringExplorationMode || !saturnRings || !hoverDetectionEnabled) return;
+      
+      // Don't show hover effects while instructions are being displayed
+      if (currentRingInfo && currentRingInfo.name === "Ring Interactive Mode") {
+        return;
+      }
       
       // Calculate mouse position
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
