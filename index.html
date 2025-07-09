@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Venus Orbit with Three.js</title>
+  <style>
+    /* Make the canvas fill the window */
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    canvas {
+      display: block; /* removes scrollbars in some browsers */
+    }
+
+    .corner-img {
+      position: fixed;
+      bottom: 16px;
+      left: 20vw;
+      width: 120px;
+      pointer-events: none;  /* lets clicks go through */
+      user-select: none;
+      z-index: 10000;        /* above the canvas */
+    }
+
+    /* Flexi mascot wrapper & bubble */
+    .flexi-container{
+      position:fixed;
+      bottom:0px;
+      left:50%;              /* center horizontally */
+      transform:translateX(-50%);
+      display:flex;
+      align-items:flex-end;
+      z-index:10000;
+      font-family:sans-serif;
+    }
+    .flexi-img{
+      width:120px;
+      pointer-events:none;
+      user-select:none;
+    }
+    .flexi-bubble{
+      margin-left:8px;
+      margin-bottom: 50px;
+      padding:8px 10px;
+      background:rgba(255,255,255,0.9);
+      color:#000;
+      border-radius:8px;
+      font-size:15px;
+      max-width:220px;
+      box-shadow:0 1px 4px rgba(0,0,0,0.3);
+      display:none;
+      font-family:'Proxima Nova', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      position:relative;
+    }
+
+    /* triangular tail */
+    .flexi-bubble::before{
+      content:"";
+      position:absolute;
+      left:-8px;            /* protrude to left toward image */
+      top:50%;              /* vertically centered */
+      transform:translateY(-50%);
+      width:0;
+      height:0;
+      border-top:8px solid transparent;
+      border-bottom:8px solid transparent;
+      border-right:8px solid rgba(255,255,255,0.9);
+    }
+  </style>
+  <!-- Import map to let the browser resolve "three" and related addon paths -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.162.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.162.0/examples/jsm/"
+    }
+  }
+  </script>
+  <!-- Font Awesome for icon glyphs -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+          /* Top menu styles */
+      .menu-container {
+        position: fixed;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10001;
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+    .menu-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      gap: 16px;
+    }
+
+  
+
+          .menu-list li i {
+        font-size: 26px;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 10px;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        line-height: 28px;
+        cursor: pointer;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+      }
+      
+      .menu-list li i:hover,
+      .menu-list li i:active {
+        background: rgba(0, 0, 0, 0.8);
+      }
+
+    .fact-box {
+      position: absolute; /* float below the icons so icons stay put */
+      top: 58px; /* just below 48px icon + 10px gap */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 260px;
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .fact-box.show {
+      display: block;
+    }
+
+
+
+    .calendar-container{
+      position: absolute;
+      bottom: 200px;            /* higher above icon row */
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.65);
+      padding:12px 16px;
+      border-radius:8px;
+      z-index:10000;
+      font-family:sans-serif;
+      color:#fff;
+      width:320px;
+      text-align:center;
+    }
+    .calendar-slider{
+      width:100%; margin:0;
+      -webkit-appearance:none; /* allow custom styling */
+      appearance:none;
+      height:4px;
+      background:#5851FF; /* fallback for unsupported pseudo-track */
+      border-radius:2px;
+      cursor:pointer;
+    }
+    .calendar-slider::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      appearance:none;
+      width:16px; height:16px;
+      border-radius:50%;
+      background:#5851FF;
+      cursor:pointer;
+      border:none;
+      box-shadow:0 0 2px rgba(0,0,0,0.4);
+      margin-top:-6px; /* center thumb relative to 4px track */
+    }
+    .calendar-slider::-webkit-slider-runnable-track{
+      height:4px;
+      background:#5851FF;
+      border-radius:2px;
+    }
+    .calendar-labels{ position:relative; font-size:12px; }
+    .calendar-labels span{ position:absolute; top:4px; transform:translateX(-50%); }
+    .calendar-labels span:first-child{ left:0; }
+    .calendar-labels span:nth-child(2){ left:60%; }   /* label 225 */
+    .calendar-labels span:last-child{ right:0; transform:none; }
+    .calendar-text{ margin-bottom:6px; font-size:13px; }
+
+    .orbit-label{
+      color:#fff;
+      font-size:12px;
+      font-family:sans-serif;
+      text-shadow:0 0 2px #000;
+      pointer-events:none;
+    }
+
+    /* Mobile-specific responsive styles */
+    @media (max-width: 768px) {
+      /* Larger touch targets for mobile */
+      .menu-list li i {
+        width: 60px !important;
+        height: 60px !important;
+        font-size: 30px !important;
+        padding: 12px !important;
+        line-height: 36px !important;
+      }
+
+      /* Better text sizing for mobile */
+      .flexi-bubble {
+        font-size: 15px !important;
+        max-width: 85vw !important;
+        margin-left: 4px !important;
+      }
+
+      /* Responsive calendar container */
+      .calendar-container {
+        width: 85vw !important;
+        max-width: 350px !important;
+        padding: 16px !important;
+      }
+
+      /* Larger slider thumb for touch */
+      .calendar-slider::-webkit-slider-thumb {
+        width: 24px !important;
+        height: 24px !important;
+        margin-top: -10px !important;
+      }
+
+      /* Adjust menu positioning for mobile */
+      .menu-container {
+        top: 80px !important;
+      }
+
+      /* Better orbit labels for mobile */
+      .orbit-label {
+        font-size: 14px !important;
+      }
+    }
+
+    /* Portrait orientation specific adjustments */
+    @media (max-width: 768px) and (orientation: portrait) {
+      .flexi-container {
+        bottom: 10px !important;
+      }
+      
+      .calendar-container {
+        bottom: 180px !important;
+      }
+    }
+
+    /* Landscape orientation specific adjustments */
+    @media (max-width: 768px) and (orientation: landscape) {
+      .menu-container {
+        top: 40px !important;
+      }
+      
+      .calendar-container {
+        bottom: 120px !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Right-side dropdown menu -->
+  <div class="menu-container">
+    <ul class="menu-list">
+      <li title="Saturn's Rings"><i class="fa-solid fa-circle-info" data-key="fire"></i></li>
+      <li title="Earth Comparison"><i class="fa-solid fa-earth-americas" data-key="earth"></i></li>
+      <li title="Saturn Orbital Period"><i class="fa-solid fa-calendar" data-key="calendar"></i></li>
+      <li title="Restart"><i class="fa-solid fa-arrows-rotate" data-key="restart"></i></li>
+    </ul>
+    <div id="factBox" class="fact-box"></div>
+  </div>
+
+  <!-- We use an inline module script so the example works without any build tooling. -->
+  <script type="module">
+    /*
+     * Import Three.js and OrbitControls directly from a CDN. This avoids the
+     * need for a build step or local dependency installation.
+     */
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+    // -------------------------------------------------------------------------
+    // Mobile device detection and optimization settings
+    // -------------------------------------------------------------------------
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 2) ||
+                     window.innerWidth < 768;
+
+    // Performance settings based on device
+    const performanceSettings = {
+      starCount: isMobile ? 3000 : 10000,
+      sphereDetail: isMobile ? 32 : 64,
+      antialiasing: !isMobile // Disable antialiasing on mobile for better performance
+    };
+
+    // -------------------------------------------------------------------------
+    // Basic scene setup
+    // -------------------------------------------------------------------------
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(
+      60,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    camera.position.set(0, 4, 6);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: performanceSettings.antialiasing });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 2 : 3));
+    document.body.appendChild(renderer.domElement);
+
+    // Label renderer for on-surface markers
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = "absolute";
+    labelRenderer.domElement.style.top = "0";
+    labelRenderer.domElement.style.pointerEvents = "none";
+    document.body.appendChild(labelRenderer.domElement);
+
+    // -------------------------------------------------------------------------
+    // Lighting
+    // -------------------------------------------------------------------------
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 3, 5);
+    scene.add(directionalLight);
+
+    // -------------------------------------------------------------------------
+    // Saturn sphere with texture
+    // -------------------------------------------------------------------------
+    const textureLoader = new THREE.TextureLoader();
+    const venusTexture = textureLoader.load("./8k_saturn.jpg");
+
+    // Preload Earth texture so Earth sphere can appear instantly when requested
+    const preloadedEarthTexture = textureLoader.load("https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg");
+
+    const sphereGeometry = new THREE.SphereGeometry(2, performanceSettings.sphereDetail, performanceSettings.sphereDetail);
+    const sphereMaterial = new THREE.MeshStandardMaterial({ map: venusTexture });
+    const venus = new THREE.Mesh(sphereGeometry, sphereMaterial);
+
+    // -------------------------------------------------------------------------
+    // Position Saturn at the center (origin) of the scene
+    // -------------------------------------------------------------------------
+    venus.position.set(0, 0, 0);
+    scene.add(venus);
+
+    // -------------------------------------------------------------------------
+    // Star field background (many small points randomly distributed)
+    // -------------------------------------------------------------------------
+    const starGeometry = new THREE.BufferGeometry();
+    const starVertices = new Float32Array(performanceSettings.starCount * 3);
+    for (let i = 0; i < performanceSettings.starCount * 3; i++) {
+      starVertices[i] = (Math.random() - 0.5) * 2000; // spread stars in a big cube
+    }
+    starGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(starVertices, 3)
+    );
+    const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1, sizeAttenuation: true });
+    const starField = new THREE.Points(starGeometry, starMaterial);
+    scene.add(starField);
+
+    // -------------------------------------------------------------------------
+    // Camera controls (optional but handy for user interaction)
+    // -------------------------------------------------------------------------
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; // smoother camera movement
+    
+    // Mobile-specific control optimizations
+    if (isMobile) {
+      controls.enableDamping = false; // Better touch responsiveness
+      controls.rotateSpeed = 0.8; // Slightly slower rotation for touch
+      controls.zoomSpeed = 1.2; // Easier pinch-to-zoom
+      controls.panSpeed = 0.8; // Smooth touch panning
+      controls.touches = {
+        ONE: THREE.TOUCH.ROTATE,
+        TWO: THREE.TOUCH.DOLLY_PAN
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // Earth setup (created on demand)
+    // -------------------------------------------------------------------------
+    let earthMesh = null;
+    let rotationPaused = false;
+    // Calendar UI elements reference
+    let calendarContainer = null;
+
+    // ---- Mini solar-system orbit (for calendar view) ----
+    let orbitGroup = null;
+    let miniEarth = null;
+    let miniSaturn = null;
+    let orbitActive = false;
+    let orbitDay = 0; // continuous simulated day counter
+
+    const EARTH_ORBIT_R = 0.8;  // Earth's orbit radius
+    const SATURN_ORBIT_R = 2.4;  // Saturn's orbit radius (scaled down from real 9.5 AU)
+
+    // Raise Saturn higher so it doesn't overlap lower UI elements
+    const SATURN_Y = 2;   // tweak as desired
+
+    // -------------------------------------------------------------------------
+    // Helper for lat/lon to Vector3 on sphere
+    // -------------------------------------------------------------------------
+    function latLonToVector3(lat, lon, radius) {
+      const latRad = (lat * Math.PI) / 180;
+      const lonRad = (lon * Math.PI) / 180;
+      const x = -radius * Math.cos(latRad) * Math.cos(lonRad);
+      const y = radius * Math.sin(latRad);
+      const z = radius * Math.cos(latRad) * Math.sin(lonRad);
+      return new THREE.Vector3(x, y, z);
+    }
+
+
+
+    // -------------------------------------------------------------------------
+    // Saturn rings (iconic ring system visualization)
+    // -------------------------------------------------------------------------
+    let saturnRings = null;
+    
+    function createSaturnRings() {
+      // Ring functionality disabled - button shows fact only
+      return;
+    }
+    
+    function removeSaturnRings() {
+      if (saturnRings) {
+        // Remove all ring meshes from the group
+        saturnRings.traverse((child) => {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) child.material.dispose();
+        });
+        scene.remove(saturnRings);
+        saturnRings = null;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // Earth creation (first Earth-icon click)
+    // -------------------------------------------------------------------------
+    function createEarth() {
+      if (earthMesh) return;
+
+      // Shift Saturn left first so positions are set before rendering
+      venus.position.set(-2.5, 0, 0);
+
+      // Earth is much smaller than Saturn - Saturn is ~9.1 times larger in radius
+      const earthGeom = new THREE.SphereGeometry(0.7, performanceSettings.sphereDetail, performanceSettings.sphereDetail);
+      const earthMat = new THREE.MeshStandardMaterial({ map: preloadedEarthTexture });
+      earthMesh = new THREE.Mesh(earthGeom, earthMat);
+      earthMesh.position.set(1.5, 0, 0);
+      scene.add(earthMesh);
+    }
+
+    function removeEarth() {
+      if (earthMesh) {
+        scene.remove(earthMesh);
+        earthMesh.geometry.dispose();
+        earthMesh.material.dispose();
+        earthMesh = null;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // Calendar slider UI
+    // -------------------------------------------------------------------------
+    function createCalendarUI() {
+      if (calendarContainer) return;
+
+      calendarContainer = document.createElement("div");
+      calendarContainer.className = "calendar-container";
+
+      calendarContainer.innerHTML = `
+        <div class="calendar-text">Day of Earth Year</div>
+        <input type="range" min="0" max="29.5" step="0.1" value="0" class="calendar-slider" id="daySlider" />
+        <div class="calendar-labels">
+          <span>0</span>
+          <span style="left: 50%">15</span>
+          <span style="right: 0">29.5</span>
+        </div>
+      `;
+
+      document.body.appendChild(calendarContainer);
+
+      const sliderEl = calendarContainer.querySelector('#daySlider');
+      sliderEl.addEventListener('input', (e)=>{
+        const val = parseFloat(sliderEl.value);
+        setOrbitYear(val);
+      });
+
+      createOrbitSystem();
+      setOrbitYear(0);
+    }
+
+    function removeCalendarUI() {
+      if (calendarContainer) {
+        calendarContainer.remove();
+        calendarContainer = null;
+      }
+
+      removeOrbitSystem();
+
+      // Return planets to original height
+      venus.position.y = 0;
+      if (earthMesh) earthMesh.position.y = 0;
+
+      // Restore big Saturn/Earth visibility
+      venus.visible = true;
+      if (earthMesh) earthMesh.visible = true;
+    }
+
+    function resetState(selectedKey) {
+      // Remove Earth if not selecting earth
+      if (selectedKey !== 'earth') {
+        removeEarth();
+        // center Saturn if it was shifted
+        venus.position.set(0, 0, 0);
+      }
+
+      // Remove rings if not selecting fire/info
+      if (selectedKey !== 'fire') {
+        removeSaturnRings();
+      }
+
+      // Remove calendar UI if not selecting calendar
+      if (selectedKey !== 'calendar') {
+        removeCalendarUI();
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Restart helper – restores scene to initial state without page reload
+    // ---------------------------------------------------------------------
+    function restartScene(){
+      // Remove any dynamic elements
+      removeEarth();
+      removeSaturnRings();
+      removeCalendarUI();
+
+      // Reset Saturn
+      venus.position.set(0,0,0);
+      venus.visible = true;
+      rotationPaused = false;
+      
+      // Re-enable camera controls
+      controls.enabled = true;
+
+      // Reset Flexi message
+      flexiBubbleElem.textContent = "Click an icon to learn more about Saturn!";
+      factBoxElem.classList.remove('show');
+    }
+
+    // -------------------------------------------------------------------------
+    // Facts and menu interactivity
+    // -------------------------------------------------------------------------
+    const facts = {
+      fire: "Saturn's magnificent ring system consists of countless ice and rock particles, making it one of the most beautiful and recognizable features in our solar system.",
+      rotation: "Fast rotation: Saturn spins very quickly with a day lasting only about 10.7 hours, making it one of the fastest rotating planets in our solar system.",
+      calendar: "Orbital period: Saturn takes about 29.5 Earth years to complete one orbit around the Sun. Use the slider to see how slowly Saturn moves compared to Earth!",
+      earth: "Size comparison: Saturn radius ≈ 58,232 km, about 9.1 times larger than Earth's radius. Saturn is also much less dense than Earth and would float in water!"
+    };
+
+    const factBoxElem = document.getElementById("factBox");
+    const flexiBubbleElem = document.getElementById("flexiBubble");
+
+    // Default message before any icon is clicked
+    flexiBubbleElem.textContent = "Click an icon to learn more about Saturn!";
+    flexiBubbleElem.style.display = 'block';
+
+    document.querySelectorAll('.menu-list i[data-key]').forEach((icon) => {
+      icon.style.cursor = 'pointer';
+      icon.addEventListener('click', () => {
+        const key = icon.dataset.key;
+        // Update Flexi bubble and ensure it's visible
+        flexiBubbleElem.textContent = facts[key] ?? '';
+        flexiBubbleElem.style.display = 'block';
+
+        // Ensure the centered fact box stays hidden
+        factBoxElem.classList.remove('show');
+
+        resetState(key);
+
+        if (key === 'restart') {
+          restartScene();
+          return;
+        } else if (key === 'earth') {
+          createEarth();
+        } else if (key === 'fire') {
+          createSaturnRings();
+        } else if (key === 'calendar') {
+          createCalendarUI();
+        }
+      });
+    });
+
+    // -------------------------------------------------------------------------
+    // Animation loop
+    // -------------------------------------------------------------------------
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Saturn prograde rotation (unless paused) - faster than Earth
+      // Saturn takes ~10.7 hours to rotate vs Earth's 24 hours, so Saturn rotates ~2.24x faster
+      if (!rotationPaused) {
+        venus.rotation.y += 0.02 * 2.24;  // Increased speed for visibility
+      }
+
+      // Saturn rings disabled
+
+      // Earth prograde rotation - normal speed
+      if (earthMesh) earthMesh.rotation.y += 0.02;  // Increased speed for visibility
+
+      // Mini orbits now advance only via the slider; no automatic update.
+
+      if (controls.enabled) {
+        controls.update();
+      }
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+    }
+    animate();
+
+    // -------------------------------------------------------------------------
+    // Responsive resizing
+    // -------------------------------------------------------------------------
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // -------------------------------------------------------------------------
+    // Mini solar-system orbit (for calendar view)
+    // -------------------------------------------------------------------------
+    function createOrbitSystem() {
+      if (orbitGroup) return;
+
+      orbitGroup = new THREE.Group();
+      orbitGroup.position.set(0, 1, 0); // lift mini solar system upward
+      scene.add(orbitGroup);
+
+      // Sun
+      const sunTexture = textureLoader.load("./2k_sun.jpg");
+      const sunMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, Math.max(16, performanceSettings.sphereDetail / 2), Math.max(16, performanceSettings.sphereDetail / 2)),
+        new THREE.MeshBasicMaterial({ map: sunTexture })
+      );
+      orbitGroup.add(sunMesh);
+
+      // Orbit rings
+      const makeRing = (r) => {
+        const seg = 128;
+        const pts = [];
+        for (let i = 0; i <= seg; i++) {
+          const a = (i / seg) * Math.PI * 2;
+          pts.push(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r));
+        }
+        const geom = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({ color: 0x888888 });
+        return new THREE.Line(geom, mat);
+      };
+      orbitGroup.add(makeRing(EARTH_ORBIT_R));
+      orbitGroup.add(makeRing(SATURN_ORBIT_R));
+
+      const earthTexMini = textureLoader.load("https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg");
+      const saturnTexMini = textureLoader.load("./8k_saturn.jpg");
+
+      // Mini Earth
+      miniEarth = new THREE.Mesh(
+        new THREE.SphereGeometry(0.08, Math.max(16, performanceSettings.sphereDetail / 2), Math.max(16, performanceSettings.sphereDetail / 2)),
+        new THREE.MeshBasicMaterial({ map: earthTexMini })
+      );
+      orbitGroup.add(miniEarth);
+
+      // Mini Saturn - larger to show its true size
+      miniSaturn = new THREE.Mesh(
+        new THREE.SphereGeometry(0.15, Math.max(16, performanceSettings.sphereDetail / 2), Math.max(16, performanceSettings.sphereDetail / 2)),
+        new THREE.MeshStandardMaterial({ map: saturnTexMini })
+      );
+      orbitGroup.add(miniSaturn);
+
+      // Labels
+      const eDiv = document.createElement('div');
+      eDiv.className = 'orbit-label';
+      eDiv.textContent = 'Earth';
+      const eLabel = new CSS2DObject(eDiv);
+      eLabel.position.set(0, 0.25, 0);
+      miniEarth.add(eLabel);
+
+      const sDiv = document.createElement('div');
+      sDiv.className = 'orbit-label';
+      sDiv.textContent = 'Saturn';
+      const sLabel = new CSS2DObject(sDiv);
+      sLabel.position.set(0, 0.25, 0);
+      miniSaturn.add(sLabel);
+
+      orbitActive = true;
+
+      // Hide big planets
+      venus.visible = false;
+      if (earthMesh) earthMesh.visible = false;
+    }
+
+    function removeOrbitSystem() {
+      if (!orbitGroup) return;
+      // Remove DOM elements of CSS2DObjects and dispose geometries/materials
+      orbitGroup.traverse((obj) => {
+        if (obj instanceof CSS2DObject) {
+          if (obj.element && obj.element.parentNode) {
+            obj.element.parentNode.removeChild(obj.element);
+          }
+        }
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) obj.material.dispose();
+      });
+      scene.remove(orbitGroup);
+      orbitGroup = null;
+      miniEarth = miniSaturn = null;
+      orbitActive = false;
+
+      // Show big planets back
+      venus.visible = true;
+      if (earthMesh) earthMesh.visible = true;
+    }
+
+    function updateMiniOrbits(deltaYears) {
+      if (!orbitActive) return;
+
+      orbitDay += deltaYears;
+
+      const thetaE = ((orbitDay % 1) / 1) * Math.PI * 2; // Earth completes orbit in 1 year
+      const thetaS = ((orbitDay % 29.5) / 29.5) * Math.PI * 2; // Saturn completes orbit in 29.5 years
+
+      miniEarth.position.set(Math.cos(thetaE) * EARTH_ORBIT_R, 0, Math.sin(thetaE) * EARTH_ORBIT_R);
+      miniSaturn.position.set(Math.cos(thetaS) * SATURN_ORBIT_R, 0, Math.sin(thetaS) * SATURN_ORBIT_R);
+    }
+
+    // Set orbit year directly (used by slider)
+    function setOrbitYear(yearVal){
+      orbitDay = yearVal;
+      const thetaE = ((orbitDay % 1) / 1) * Math.PI * 2; // Earth completes orbit in 1 year
+      const thetaS = ((orbitDay % 29.5) / 29.5) * Math.PI * 2; // Saturn completes orbit in 29.5 years
+      if(miniEarth && miniSaturn){
+        miniEarth.position.set(Math.cos(thetaE) * EARTH_ORBIT_R, 0, Math.sin(thetaE) * EARTH_ORBIT_R);
+        miniSaturn.position.set(Math.cos(thetaS) * SATURN_ORBIT_R, 0, Math.sin(thetaS) * SATURN_ORBIT_R);
+      }
+    }
+  </script>
+
+  <!-- No extra JS needed; interactivity handled in module script -->
+
+  <!--
+    NOTE: If you open this file directly from the filesystem (file://), you may
+    run into CORS issues loading the texture. It's recommended to serve the
+    folder via a simple local web server. For example, from the terminal:
+
+      python3 -m http.server 8000
+
+    Then visit http://localhost:8000 in your browser.
+  -->
+  <div class="flexi-container">
+    <img src="./Flexi_Telescope.svg" alt="Flexi with telescope" class="flexi-img" />
+    <div id="flexiBubble" class="flexi-bubble"></div>
+  </div>
+</body>
+</html>
