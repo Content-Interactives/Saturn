@@ -535,6 +535,7 @@
     let ringExplorationMode = false;
     let ringInfoPopup = null;
     let currentRingInfo = null;
+    let hoverDetectionEnabled = false;
     
     // Create dynamic particle effects for rings
     function createRingParticles(ringData, parentGroup) {
@@ -573,7 +574,19 @@
     
     // Enable ring click interaction mode
     function enableRingExploration() {
+      // Enable ring exploration mode immediately
       ringExplorationMode = true;
+      hoverDetectionEnabled = false;
+      
+      // Clear any existing hover state immediately
+      if (hoveredRing) {
+        hoveredRing.material.opacity = hoveredRing.userData.originalOpacity;
+        hoveredRing = null;
+      }
+      document.body.style.cursor = 'default';
+      
+      // Clear any existing ring info immediately
+      hideAllRingInfo();
       
       // Create info popup element
       if (!ringInfoPopup) {
@@ -597,17 +610,25 @@
         document.body.appendChild(ringInfoPopup);
       }
       
-      // Show exploration instructions
+      // Show only instructions - no ring detection
       showRingInfo({
         name: "Ring Interactive Mode",
         composition: "Click on any ring to learn about its composition",
         size: "Discover what Saturn's rings are made of by clicking on them!"
       });
       
+      // Enable hover detection after a delay to prevent automatic triggering
+      setTimeout(() => {
+        if (ringExplorationMode) { // Only enable if still in exploration mode
+          hoverDetectionEnabled = true;
+        }
+      }, 1000);
+      
       // Auto-hide instructions after 3 seconds
       setTimeout(() => {
         if (ringInfoPopup && currentRingInfo && currentRingInfo.name === "Ring Interactive Mode") {
           ringInfoPopup.style.display = 'none';
+          currentRingInfo = null; // Clear the current ring info
         }
       }, 3000);
     }
@@ -628,6 +649,7 @@
       setTimeout(() => {
         if (ringInfoPopup && currentRingInfo === ringData) {
           ringInfoPopup.style.display = 'none';
+          currentRingInfo = null; // Clear the current ring info
         }
       }, 4000);
     }
@@ -635,16 +657,21 @@
     // Disable ring exploration mode
     function disableRingExploration() {
       ringExplorationMode = false;
+      hoverDetectionEnabled = false;
+      
       if (ringInfoPopup) {
         ringInfoPopup.style.display = 'none';
       }
       
-      // Clean up hover effects
+      // Clean up hover effects and reset cursor
       if (hoveredRing) {
         hoveredRing.material.opacity = hoveredRing.userData.originalOpacity;
         hoveredRing = null;
-        document.body.style.cursor = 'default';
       }
+      
+      // Reset cursor and clear current ring info
+      document.body.style.cursor = 'default';
+      currentRingInfo = null;
     }
     
     // Raycasting for ring clicks
@@ -693,7 +720,7 @@
     let hoveredRing = null;
     
     function onRingHover(event) {
-      if (!ringExplorationMode || !saturnRings) return;
+      if (!ringExplorationMode || !saturnRings || !hoverDetectionEnabled) return;
       
       // Calculate mouse position
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -741,6 +768,14 @@
       
       onRingClick(clickEvent);
     });
+    
+    // Create a way to hide any existing popup when entering ring mode
+    function hideAllRingInfo() {
+      if (ringInfoPopup) {
+        ringInfoPopup.style.display = 'none';
+      }
+      currentRingInfo = null;
+    }
     
     function removeSaturnRings() {
       if (saturnRings) {
