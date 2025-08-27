@@ -33,7 +33,7 @@
       display:flex;
       align-items:flex-end;
       z-index:10000;
-      font-family:sans-serif;
+      font-family:'Proxima Nova', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     }
     .flexi-img{
       width:120px;
@@ -89,7 +89,7 @@
         left: 50%;
         transform: translateX(-50%);
         z-index: 10001;
-        font-family: sans-serif;
+        font-family: 'Proxima Nova', 'Helvetica Neue', Helvetica, Arial, sans-serif;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -155,7 +155,7 @@
       padding:12px 16px;
       border-radius:8px;
       z-index:10000;
-      font-family:sans-serif;
+      font-family:'Proxima Nova', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       color:#fff;
       width:320px;
       text-align:center;
@@ -195,7 +195,7 @@
     .orbit-label{
       color:#fff;
       font-size:12px;
-      font-family:sans-serif;
+      font-family:'Proxima Nova', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       text-shadow:0 0 2px #000;
       pointer-events:none;
     }
@@ -262,6 +262,18 @@
       
       .calendar-container {
         bottom: 120px !important;
+      }
+    }
+    
+    /* Animation for popup fade-in effect */
+    @keyframes popupFadeIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
       }
     }
   </style>
@@ -605,16 +617,19 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
+            background: linear-gradient(135deg, rgba(20, 30, 48, 0.95), rgba(36, 59, 85, 0.95));
             color: white;
-            padding: 20px;
-            border-radius: 10px;
-            font-family: sans-serif;
+            padding: 25px 30px;
+            border-radius: 20px;
+            font-family: 'Proxima Nova', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             text-align: center;
             z-index: 20000;
-            max-width: 300px;
-            border: 2px solid #5851FF;
+            max-width: 350px;
+            border: 1px solid rgba(88, 81, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(88, 81, 255, 0.2);
+            backdrop-filter: blur(10px);
             display: none;
+            animation: popupFadeIn 0.3s ease-out;
           `;
           document.body.appendChild(ringInfoPopup);
         }
@@ -649,9 +664,15 @@
       
       currentRingInfo = ringData;
       ringInfoPopup.innerHTML = `
-        <h3 style="margin: 0 0 10px 0; color: #5851FF;">${ringData.name}</h3>
-        <p style="margin: 5px 0;"><strong>Composition:</strong><br>${ringData.composition}</p>
-        <p style="margin: 5px 0;"><strong>Details:</strong><br>${ringData.size}</p>
+        <h3 style="margin: 0 0 15px 0; color: #64B5F6; font-size: 1.4em; font-weight: 600; text-shadow: 0 0 10px rgba(100, 181, 246, 0.3);">${ringData.name}</h3>
+        <div style="margin: 12px 0; padding: 8px 0;">
+          <p style="margin: 0 0 8px 0; font-weight: 600; color: #E3F2FD;">Composition:</p>
+          <p style="margin: 0; line-height: 1.4; color: #BBDEFB;">${ringData.composition}</p>
+        </div>
+        <div style="margin: 12px 0; padding: 8px 0;">
+          <p style="margin: 0 0 8px 0; font-weight: 600; color: #E3F2FD;">Details:</p>
+          <p style="margin: 0; line-height: 1.4; color: #BBDEFB;">${ringData.size}</p>
+        </div>
       `;
       ringInfoPopup.style.display = 'block';
       
@@ -828,13 +849,13 @@
       if (earthMesh) return;
 
       // Shift Saturn left first so positions are set before rendering
-      saturn.position.set(-2.5, 0, 0);
+      saturn.position.set(-1.5, 0, 0);
 
       // Earth is much smaller than Saturn - Saturn is ~9.1 times larger in radius
       const earthGeom = new THREE.SphereGeometry(0.7, performanceSettings.sphereDetail, performanceSettings.sphereDetail);
       const earthMat = new THREE.MeshStandardMaterial({ map: preloadedEarthTexture });
       earthMesh = new THREE.Mesh(earthGeom, earthMat);
-      earthMesh.position.set(1.5, 0, 0);
+      earthMesh.position.set(2.5, 0, 0);
       scene.add(earthMesh);
     }
 
@@ -999,7 +1020,7 @@
       // Saturn prograde rotation (unless paused) - faster than Earth
       // Saturn takes ~10.7 hours to rotate vs Earth's 24 hours, so Saturn rotates ~2.24x faster
       if (!rotationPaused) {
-        saturn.rotation.y += 0.02 * 2.24;  // Increased speed for visibility
+        saturn.rotation.y += 0.03 * 2.24;  // Saturn rotates significantly faster than Earth
       }
 
       // Animate Saturn rings and particles
@@ -1015,7 +1036,7 @@
       }
 
       // Earth prograde rotation - normal speed
-      if (earthMesh) earthMesh.rotation.y += 0.02;  // Increased speed for visibility
+      if (earthMesh) earthMesh.rotation.y += 0.015;  // Earth rotates slower than Saturn
 
       // Mini orbits now advance only via the slider; no automatic update.
 
