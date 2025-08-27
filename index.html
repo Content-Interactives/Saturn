@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Venus Orbit with Three.js</title>
+  <title>Saturn Interactive with Three.js</title>
   <style>
     /* Make the canvas fill the window */
     body {
@@ -342,20 +342,20 @@
     // Saturn sphere with texture
     // -------------------------------------------------------------------------
     const textureLoader = new THREE.TextureLoader();
-    const venusTexture = textureLoader.load("./8k_saturn.jpg");
+    const saturnTexture = textureLoader.load("./8k_saturn.jpg");
 
     // Preload Earth texture so Earth sphere can appear instantly when requested
     const preloadedEarthTexture = textureLoader.load("https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg");
 
     const sphereGeometry = new THREE.SphereGeometry(2, performanceSettings.sphereDetail, performanceSettings.sphereDetail);
-    const sphereMaterial = new THREE.MeshStandardMaterial({ map: venusTexture });
-    const venus = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    const sphereMaterial = new THREE.MeshStandardMaterial({ map: saturnTexture });
+    const saturn = new THREE.Mesh(sphereGeometry, sphereMaterial);
 
     // -------------------------------------------------------------------------
     // Position Saturn at the center (origin) of the scene
     // -------------------------------------------------------------------------
-    venus.position.set(0, 0, 0);
-    scene.add(venus);
+    saturn.position.set(0, 0, 0);
+    scene.add(saturn);
 
     // -------------------------------------------------------------------------
     // Star field background (many small points randomly distributed)
@@ -524,10 +524,10 @@
         }
       });
       
-      saturnRings.position.copy(venus.position);
+      saturnRings.position.copy(saturn.position);
       
       // Add a slight upward tilt to Saturn and rings for better viewing angle
-      venus.rotation.x = -0.2; // Tilt Saturn slightly upward
+      saturn.rotation.x = -0.2; // Tilt Saturn slightly upward
       saturnRings.rotation.x = -0.2; // Tilt rings to match Saturn
       
       scene.add(saturnRings);
@@ -809,7 +809,7 @@
       }
       
       // Reset Saturn's tilt back to normal
-      venus.rotation.x = 0;
+      saturn.rotation.x = 0;
       
       // Disable exploration mode
       disableRingExploration();
@@ -828,7 +828,7 @@
       if (earthMesh) return;
 
       // Shift Saturn left first so positions are set before rendering
-      venus.position.set(-2.5, 0, 0);
+      saturn.position.set(-2.5, 0, 0);
 
       // Earth is much smaller than Saturn - Saturn is ~9.1 times larger in radius
       const earthGeom = new THREE.SphereGeometry(0.7, performanceSettings.sphereDetail, performanceSettings.sphereDetail);
@@ -887,11 +887,11 @@
       removeOrbitSystem();
 
       // Return planets to original height
-      venus.position.y = 0;
+      saturn.position.y = 0;
       if (earthMesh) earthMesh.position.y = 0;
 
       // Restore big Saturn/Earth visibility
-      venus.visible = true;
+      saturn.visible = true;
       if (earthMesh) earthMesh.visible = true;
     }
 
@@ -900,7 +900,7 @@
       if (selectedKey !== 'earth') {
         removeEarth();
         // center Saturn if it was shifted
-        venus.position.set(0, 0, 0);
+        saturn.position.set(0, 0, 0);
       }
 
       // Remove rings if not selecting fire/info
@@ -934,9 +934,9 @@
       }
 
       // Reset Saturn
-      venus.position.set(0,0,0);
-      venus.rotation.x = 0; // Reset any tilt
-      venus.visible = true;
+      saturn.position.set(0,0,0);
+      saturn.rotation.x = 0; // Reset any tilt
+      saturn.visible = true;
       rotationPaused = false;
       
       // Re-enable camera controls
@@ -999,7 +999,7 @@
       // Saturn prograde rotation (unless paused) - faster than Earth
       // Saturn takes ~10.7 hours to rotate vs Earth's 24 hours, so Saturn rotates ~2.24x faster
       if (!rotationPaused) {
-        venus.rotation.y += 0.02 * 2.24;  // Increased speed for visibility
+        saturn.rotation.y += 0.02 * 2.24;  // Increased speed for visibility
       }
 
       // Animate Saturn rings and particles
@@ -1105,7 +1105,7 @@
       orbitActive = true;
 
       // Hide big planets
-      venus.visible = false;
+      saturn.visible = false;
       if (earthMesh) earthMesh.visible = false;
     }
 
@@ -1127,7 +1127,7 @@
       orbitActive = false;
 
       // Show big planets back
-      venus.visible = true;
+      saturn.visible = true;
       if (earthMesh) earthMesh.visible = true;
     }
 

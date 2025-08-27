@@ -1,9 +1,9 @@
 {
-  "name": "venus",
+  "name": "saturn",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "npx http-server -p 8080",
+    "dev": "npx http-server -p 8081",
     "start": "npm run dev",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
