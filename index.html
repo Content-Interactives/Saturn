@@ -617,19 +617,20 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, rgba(20, 30, 48, 0.95), rgba(36, 59, 85, 0.95));
+            background: rgba(15, 15, 20, 0.92);
             color: white;
-            padding: 25px 30px;
-            border-radius: 20px;
-            font-family: 'Proxima Nova', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            text-align: center;
+            padding: 32px 36px;
+            border-radius: 24px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            text-align: left;
             z-index: 20000;
-            max-width: 350px;
-            border: 1px solid rgba(88, 81, 255, 0.3);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(88, 81, 255, 0.2);
-            backdrop-filter: blur(10px);
+            max-width: 420px;
+            min-width: 320px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px) saturate(180%);
             display: none;
-            animation: popupFadeIn 0.3s ease-out;
+            animation: popupFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
           `;
           document.body.appendChild(ringInfoPopup);
         }
@@ -664,14 +665,23 @@
       
       currentRingInfo = ringData;
       ringInfoPopup.innerHTML = `
-        <h3 style="margin: 0 0 15px 0; color: #64B5F6; font-size: 1.4em; font-weight: 600; text-shadow: 0 0 10px rgba(100, 181, 246, 0.3);">${ringData.name}</h3>
-        <div style="margin: 12px 0; padding: 8px 0;">
-          <p style="margin: 0 0 8px 0; font-weight: 600; color: #E3F2FD;">Composition:</p>
-          <p style="margin: 0; line-height: 1.4; color: #BBDEFB;">${ringData.composition}</p>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+          <div style="width: 4px; height: 32px; background: linear-gradient(180deg, #6366f1, #8b5cf6); border-radius: 2px;"></div>
+          <h3 style="margin: 0; color: #ffffff; font-size: 1.5em; font-weight: 700; letter-spacing: -0.025em;">${ringData.name}</h3>
         </div>
-        <div style="margin: 12px 0; padding: 8px 0;">
-          <p style="margin: 0 0 8px 0; font-weight: 600; color: #E3F2FD;">Details:</p>
-          <p style="margin: 0; line-height: 1.4; color: #BBDEFB;">${ringData.size}</p>
+        <div style="margin-bottom: 20px;">
+          <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; opacity: 0.8;"></div>
+            <p style="margin: 0; font-weight: 600; color: #d1d5db; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.05em;">Composition</p>
+          </div>
+          <p style="margin: 0; line-height: 1.6; color: #f3f4f6; font-size: 1em;">${ringData.composition}</p>
+        </div>
+        <div>
+          <div style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <div style="width: 8px; height: 8px; background: #f59e0b; border-radius: 50%; opacity: 0.8;"></div>
+            <p style="margin: 0; font-weight: 600; color: #d1d5db; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.05em;">Details</p>
+          </div>
+          <p style="margin: 0; line-height: 1.6; color: #f3f4f6; font-size: 1em;">${ringData.size}</p>
         </div>
       `;
       ringInfoPopup.style.display = 'block';
